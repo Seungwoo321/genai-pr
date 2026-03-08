@@ -153,13 +153,18 @@ async function generateFromLocalBranch(
 
   // Determine branches
   const headBranch = options.branch ?? await getCurrentBranch();
+  console.log(`  Current branch: ${headBranch}`);
+
   let baseBranch: string;
   if (options.base) {
     baseBranch = options.base;
   } else {
     const defaultBase = await getDefaultBaseBranch();
     const branches = await getLocalBranches(headBranch);
-    if (branches.length > 0) {
+    if (branches.length === 1) {
+      baseBranch = branches[0];
+      logger.success(`Auto-selected base branch: ${baseBranch}`);
+    } else if (branches.length > 1) {
       baseBranch = await promptBaseBranch(branches, defaultBase);
     } else {
       baseBranch = defaultBase;
