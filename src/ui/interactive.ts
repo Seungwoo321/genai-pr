@@ -58,12 +58,17 @@ async function promptFeedback(): Promise<string> {
 export async function promptTemplateSelection(
   templateNames: string[]
 ): Promise<string> {
+  const choices = [
+    { value: 'auto', name: 'auto (detect from branch name)' },
+    ...templateNames.map((name) => ({ value: name, name })),
+  ];
+
   const { template } = await inquirer.prompt<{ template: string }>([
     {
       type: 'list',
       name: 'template',
       message: 'Select a PR template:',
-      choices: templateNames.map((name) => ({ value: name, name })),
+      choices,
     },
   ]);
 

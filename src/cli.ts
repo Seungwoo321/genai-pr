@@ -21,6 +21,7 @@ program
 program
   .argument('<provider>', 'AI provider (claude-code or cursor-cli)')
   .option('-t, --template <name>', 'PR template to use (feature, bugfix, or custom)')
+  .option('--auto', 'Auto-detect template from branch name and commits')
   .option('-b, --base <branch>', 'Base/target branch (default: main)')
   .option('--branch <branch>', 'Head/source branch (default: current branch)')
   .option('-m, --model <model>', 'Model to use')

@@ -37,6 +37,7 @@ import { DEFAULT_CONFIG } from '../config/defaults.js';
 
 export interface GenerateOptions {
   template?: string;
+  auto?: boolean;
   base?: string;
   branch?: string;
   model?: string;
@@ -64,6 +65,11 @@ export async function generateCommand(
   }
 
   const providerType = provider as ProviderType;
+
+  // --auto flag sets template to 'auto'
+  if (options.auto && !options.template) {
+    options.template = 'auto';
+  }
 
   // Check gh CLI
   const ghStatus = await checkGhCli();
@@ -95,8 +101,14 @@ async function generateFromPRUrl(
   const { baseBranch, headBranch } = prInfo;
   console.log(`  ${headBranch} -> ${baseBranch}`);
 
+  // Get commit log early (needed for auto-detection)
+  displayProgress(2, 4, 'Getting commit log...');
+  const commitLog = await getPRCommits(prRef);
+  const commitLines = commitLog.split('\n').filter((l) => l.trim()).length;
+  console.log(`  ${commitLines} commit(s)`);
+
   // Select template
-  const template = await resolveTemplate(options);
+  const template = await resolveTemplate(options, headBranch, commitLog);
 
   // Build config
   const config = buildConfig(options);
@@ -107,12 +119,6 @@ async function generateFromPRUrl(
 
   displayAnalysisStart(baseBranch, headBranch, options.model);
   displayTemplateInfo(template.name, template.source);
-
-  // Gather data from PR
-  displayProgress(2, 4, 'Getting commit log...');
-  const commitLog = await getPRCommits(prRef);
-  const commitLines = commitLog.split('\n').filter((l) => l.trim()).length;
-  console.log(`  ${commitLines} commit(s)`);
 
   displayProgress(3, 4, 'Getting diff stat...');
   const changedFiles = await getPRChangedFiles(prRef);
@@ -170,8 +176,14 @@ async function generateFromLocalBranch(
     }
   }
 
+  // Get commit log early (needed for auto-detection)
+  displayProgress(1, 3, 'Getting commit log...');
+  const commitLog = await getCommitLog(baseBranch, headBranch);
+  const commitCount = await getCommitCount(baseBranch, headBranch);
+  console.log(`  ${commitCount} commit(s)`);
+
   // Select template
-  const template = await resolveTemplate(options);
+  const template = await resolveTemplate(options, headBranch, commitLog);
 
   // Build config
   const config = buildConfig(options);
@@ -182,12 +194,6 @@ async function generateFromLocalBranch(
 
   displayAnalysisStart(baseBranch, headBranch, options.model);
   displayTemplateInfo(template.name, template.source);
-
-  // Gather git data
-  displayProgress(1, 3, 'Getting commit log...');
-  const commitLog = await getCommitLog(baseBranch, headBranch);
-  const commitCount = await getCommitCount(baseBranch, headBranch);
-  console.log(`  ${commitCount} commit(s)`);
 
   displayProgress(2, 3, 'Getting diff stat...');
   const changedFiles = await getChangedFiles(baseBranch, headBranch);
@@ -207,10 +213,41 @@ async function generateFromLocalBranch(
 }
 
 /**
- * Resolve template from options or interactive prompt
+ * Infer template name from branch name and commit messages
  */
-async function resolveTemplate(options: GenerateOptions) {
+function inferTemplateName(headBranch: string, commitLog?: string): string {
+  const branch = headBranch.toLowerCase();
+
+  // Branch name patterns
+  const bugfixPatterns = /^(fix|bugfix|hotfix|patch)\//;
+  const featurePatterns = /^(feature|feat)\//;
+
+  if (bugfixPatterns.test(branch)) {
+    return 'bugfix';
+  }
+  if (featurePatterns.test(branch)) {
+    return 'feature';
+  }
+
+  // Fallback: check commit messages
+  if (commitLog) {
+    const lines = commitLog.toLowerCase();
+    const fixCount = (lines.match(/\bfix\b/g) || []).length;
+    const featCount = (lines.match(/\bfeat\b/g) || []).length;
+    if (fixCount > featCount) {
+      return 'bugfix';
+    }
+  }
+
+  return 'feature';
+}
+
+/**
+ * Resolve template from options, auto-detection, or interactive prompt
+ */
+async function resolveTemplate(options: GenerateOptions, headBranch?: string, commitLog?: string) {
   let templateName = options.template;
+
   if (!templateName) {
     const templates = listTemplates({ templateDir: options.templateDir });
     if (templates.length === 0) {
@@ -218,6 +255,12 @@ async function resolveTemplate(options: GenerateOptions) {
       process.exit(1);
     }
     templateName = await promptTemplateSelection(templates.map((t) => t.name));
+  }
+
+  // auto selected from CLI --auto or interactive prompt
+  if (templateName === 'auto' && headBranch) {
+    templateName = inferTemplateName(headBranch, commitLog);
+    logger.success(`Auto-detected template: ${templateName}`);
   }
 
   const template = loadTemplate(templateName, { templateDir: options.templateDir });
