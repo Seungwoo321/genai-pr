@@ -55,6 +55,26 @@ async function promptFeedback(): Promise<string> {
 /**
  * Prompt user to select a template
  */
+/**
+ * Prompt user to select a base branch
+ */
+export async function promptBaseBranch(
+  branches: string[],
+  defaultBranch: string
+): Promise<string> {
+  const { base } = await inquirer.prompt<{ base: string }>([
+    {
+      type: 'list',
+      name: 'base',
+      message: 'Select base branch:',
+      choices: branches.map((name) => ({ value: name, name })),
+      default: defaultBranch,
+    },
+  ]);
+
+  return base;
+}
+
 export async function promptTemplateSelection(
   templateNames: string[]
 ): Promise<string> {
