@@ -28,6 +28,7 @@ export {
   isGitRepository,
   getCurrentBranch,
   getDefaultBaseBranch,
+  getLocalBranches,
   branchExists,
   hasRemoteTracking,
   hasCommitsBetween,

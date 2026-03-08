@@ -68,6 +68,14 @@ export async function hasRemoteTracking(): Promise<boolean> {
 }
 
 /**
+ * Get list of local branches (excluding current)
+ */
+export async function getLocalBranches(currentBranch: string): Promise<string[]> {
+  const summary = await git.branchLocal();
+  return summary.all.filter((b) => b !== currentBranch);
+}
+
+/**
  * Check if there are commits between base and head
  */
 export async function hasCommitsBetween(baseBranch: string, headBranch: string): Promise<boolean> {
