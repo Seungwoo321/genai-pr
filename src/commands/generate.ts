@@ -11,6 +11,7 @@ import {
   isGitRepository,
   getCurrentBranch,
   getDefaultBaseBranch,
+  getLocalBranches,
   branchExists,
   hasCommitsBetween,
 } from '../git/branch.js';
@@ -29,7 +30,7 @@ import {
   getPRChangedFiles,
   getPRDiffStat,
 } from '../github/pr.js';
-import { runInteractiveLoop, promptTemplateSelection } from '../ui/interactive.js';
+import { runInteractiveLoop, promptTemplateSelection, promptBaseBranch } from '../ui/interactive.js';
 import { displayAnalysisStart, displayProgress, displayTemplateInfo } from '../ui/display.js';
 import { validateTitleLength } from '../utils/validation.js';
 import { logger } from '../utils/logger.js';
@@ -152,7 +153,18 @@ async function generateFromLocalBranch(
 
   // Determine branches
   const headBranch = options.branch ?? await getCurrentBranch();
-  const baseBranch = options.base ?? await getDefaultBaseBranch();
+  let baseBranch: string;
+  if (options.base) {
+    baseBranch = options.base;
+  } else {
+    const defaultBase = await getDefaultBaseBranch();
+    const branches = await getLocalBranches(headBranch);
+    if (branches.length > 0) {
+      baseBranch = await promptBaseBranch(branches, defaultBase);
+    } else {
+      baseBranch = defaultBase;
+    }
+  }
 
   // Validate base branch exists
   if (!(await branchExists(baseBranch))) {
