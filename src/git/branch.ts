@@ -3,6 +3,7 @@
  */
 
 import simpleGit from 'simple-git';
+import { execSimple } from '../utils/exec.js';
 
 const git = simpleGit();
 
@@ -73,6 +74,32 @@ export async function hasRemoteTracking(): Promise<boolean> {
 export async function getLocalBranches(currentBranch: string): Promise<string[]> {
   const summary = await git.branchLocal();
   return summary.all.filter((b) => b !== currentBranch);
+}
+
+/**
+ * Fetch remote and resolve branch to remote ref for accurate comparison.
+ * Returns "origin/main" style ref if available, otherwise local branch name.
+ * Skips fetch if the remote ref already exists locally.
+ */
+export async function resolveRemoteRef(
+  branch: string,
+  remote: string = 'origin'
+): Promise<string> {
+  const remoteRef = `${remote}/${branch}`;
+  try {
+    // Check if remote ref already exists locally (skip fetch for speed)
+    await git.revparse(['--verify', remoteRef]);
+    return remoteRef;
+  } catch {
+    // Remote ref not found locally, try fetching
+    try {
+      await execSimple('git', ['fetch', remote, branch], { timeout: 15000 });
+      await git.revparse(['--verify', remoteRef]);
+      return remoteRef;
+    } catch {
+      return branch;
+    }
+  }
 }
 
 /**
