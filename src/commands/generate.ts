@@ -14,6 +14,7 @@ import {
   getLocalBranches,
   branchExists,
   hasCommitsBetween,
+  resolveRemoteRef,
 } from '../git/branch.js';
 import { getDetailedDiff, getChangedFiles, getDiffStat } from '../git/diff.js';
 import { getCommitLog, getCommitCount } from '../git/log.js';
@@ -171,14 +172,18 @@ async function generateFromLocalBranch(
     }
   }
 
-  // Validate base branch exists
-  if (!(await branchExists(baseBranch))) {
+  // Resolve remote ref for accurate comparison (also validates branch exists)
+  const compareRef = await resolveRemoteRef(baseBranch);
+  if (compareRef !== baseBranch) {
+    logger.info(`Using remote ref: ${compareRef}`);
+  } else if (!(await branchExists(baseBranch))) {
+    // Neither remote nor local branch exists
     logger.error(`Base branch '${baseBranch}' does not exist`);
     process.exit(1);
   }
 
   // Check for commits between branches
-  if (!(await hasCommitsBetween(baseBranch, headBranch))) {
+  if (!(await hasCommitsBetween(compareRef, headBranch))) {
     logger.warning(`No commits between ${baseBranch} and ${headBranch}`);
     process.exit(0);
   }
@@ -195,8 +200,8 @@ async function generateFromLocalBranch(
 
   // Get commit log early (needed for auto-detection)
   displayProgress(1, 3, 'Getting commit log...');
-  const commitLog = await getCommitLog(baseBranch, headBranch);
-  const commitCount = await getCommitCount(baseBranch, headBranch);
+  const commitLog = await getCommitLog(compareRef, headBranch);
+  const commitCount = await getCommitCount(compareRef, headBranch);
   console.log(`  ${commitCount} commit(s)`);
 
   // Select template
@@ -213,12 +218,12 @@ async function generateFromLocalBranch(
   displayTemplateInfo(template.name, template.source);
 
   displayProgress(2, 3, 'Getting diff stat...');
-  const changedFiles = await getChangedFiles(baseBranch, headBranch);
-  const diffStat = await getDiffStat(baseBranch, headBranch);
+  const changedFiles = await getChangedFiles(compareRef, headBranch);
+  const diffStat = await getDiffStat(compareRef, headBranch);
   console.log(`  ${changedFiles.length} file(s) changed`);
 
   displayProgress(3, 3, 'Getting detailed diff...');
-  const diff = await getDetailedDiff(baseBranch, headBranch, config.maxDiffSize);
+  const diff = await getDetailedDiff(compareRef, headBranch, config.maxDiffSize);
   console.log(`  Diff size: ${diff.length} bytes`);
 
   // Generate and interact
