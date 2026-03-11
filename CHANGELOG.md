@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.3.0-beta.0](https://github.com/Seungwoo321/genai-pr/compare/v0.2.1-beta.0...v0.3.0-beta.0) (2026-03-11)
+
+### Features
+
+* **branch:** add remote ref resolution for accurate comparison ([25ae82c](https://github.com/Seungwoo321/genai-pr/commit/25ae82c9249d4c2067c1c3a7942a0f1deb8efcc0))
+
 ## [0.2.1](https://github.com/Seungwoo321/genai-pr/compare/v0.2.1-beta.0...v0.2.1) (2026-03-08)
 
 ## [0.2.1-beta.0](https://github.com/Seungwoo321/genai-pr/compare/v0.2.0-beta.0...v0.2.1-beta.0) (2026-03-08)
