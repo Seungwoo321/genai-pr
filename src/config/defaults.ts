@@ -14,6 +14,7 @@ export const DEFAULT_CONFIG: GenprConfig = {
 
 export const CURSOR_DEFAULT_MODEL = 'claude-4.5-sonnet';
 export const CLAUDE_DEFAULT_MODEL = 'haiku';
+export const CODEX_DEFAULT_MODEL = 'gpt-5.4';
 
 // Supported models per provider
 export const CURSOR_MODELS = [
@@ -31,4 +32,11 @@ export const CLAUDE_MODELS = [
   { name: 'haiku', description: 'Claude Haiku (default, fast)' },
   { name: 'sonnet', description: 'Claude Sonnet (balanced)' },
   { name: 'opus', description: 'Claude Opus (powerful)' },
+];
+
+export const CODEX_MODELS = [
+  { name: 'gpt-5.4', description: 'Latest frontier agentic coding model (default)' },
+  { name: 'gpt-5.4-mini', description: 'Smaller frontier agentic coding model' },
+  { name: 'gpt-5.3-codex', description: 'Frontier Codex-optimized agentic coding model' },
+  { name: 'gpt-5.2', description: 'Optimized for professional work and long-running agents' },
 ];

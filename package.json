@@ -1,7 +1,7 @@
 {
   "name": "genai-pr",
   "version": "0.3.0",
-  "description": "AI-powered PR description generator using Claude Code or Cursor CLI",
+  "description": "AI-powered PR description generator using Claude Code, Cursor CLI, or Codex CLI",
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -48,6 +48,7 @@
     "ai",
     "claude",
     "cursor",
+    "codex",
     "cli",
     "github",
     "generator",
@@ -64,12 +65,16 @@
     "zod": "^3.22.4"
   },
   "devDependencies": {
+    "@eslint/js": "^9.39.4",
     "@release-it/conventional-changelog": "^10.0.4",
     "@types/node": "^20.11.0",
+    "eslint": "^9.39.4",
+    "prettier": "^3.8.3",
     "release-it": "^19.2.3",
     "tsup": "^8.0.1",
     "tsx": "^4.7.0",
     "typescript": "^5.3.3",
+    "typescript-eslint": "^8.59.0",
     "vitest": "^1.2.0"
   }
 }

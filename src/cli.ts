@@ -14,17 +14,17 @@ const program = new Command();
 
 program
   .name('genai-pr')
-  .description('AI-powered PR description generator using Claude Code or Cursor CLI')
+  .description('AI-powered PR description generator using Claude Code, Cursor CLI, or Codex CLI')
   .version('0.1.0');
 
 // Main generation command: genai-pr <provider>
 program
-  .argument('<provider>', 'AI provider (claude-code or cursor-cli)')
+  .argument('<provider>', 'AI provider: claude-code|claude, cursor-cli|cursor, codex-cli|codex')
   .option('-t, --template <name>', 'PR template to use (feature, bugfix, or custom)')
   .option('--auto', 'Auto-detect template from branch name and commits')
   .option('-b, --base <branch>', 'Base/target branch (default: main)')
   .option('--branch <branch>', 'Head/source branch (default: current branch)')
-  .option('-m, --model <model>', 'Model to use')
+  .option('-m, --model <model>', 'Model to use (varies by provider; see: genai-pr models <provider>)')
   .option('--lang <lang>', 'Set both title and body language (en|ko)')
   .option('--title-lang <lang>', 'Language for PR title (en|ko)', 'en')
   .option('--body-lang <lang>', 'Language for PR body (en|ko)', 'ko')
@@ -63,18 +63,24 @@ program
 program.addHelpText(
   'after',
   `
-Examples:
-  $ genai-pr claude-code                          # Interactive mode
-  $ genai-pr cursor-cli                           # Use Cursor CLI
-  $ genai-pr claude-code -t feature -b main       # One-liner with options
-  $ genai-pr claude-code --branch feature/AUTH-123 --base develop
-  $ genai-pr claude-code --draft                  # Create draft PR
-  $ genai-pr claude-code --dry-run                # Preview without creating
-  $ genai-pr claude-code --url https://github.com/owner/repo/pull/15
+Providers (canonical | short alias):
+  claude-code | claude     Anthropic Claude Code CLI
+  cursor-cli  | cursor     Cursor Agent CLI
+  codex-cli   | codex      OpenAI Codex CLI
 
-  $ genai-pr login claude-code                    # Login to Claude
-  $ genai-pr status claude-code                   # Check status
-  $ genai-pr models cursor-cli                    # List models
+Examples:
+  $ genai-pr claude                               # Interactive mode (short alias)
+  $ genai-pr cursor                               # Use Cursor CLI
+  $ genai-pr codex                                # Use Codex CLI
+  $ genai-pr claude -t feature -b main            # One-liner with options
+  $ genai-pr claude --branch feature/AUTH-123 --base develop
+  $ genai-pr claude --draft                       # Create draft PR
+  $ genai-pr claude --dry-run                     # Preview without creating
+  $ genai-pr claude --url https://github.com/owner/repo/pull/15
+
+  $ genai-pr login codex                          # Login to Codex
+  $ genai-pr status claude                        # Check status
+  $ genai-pr models cursor                        # List models
   $ genai-pr templates                            # List templates
 
 Interactive options:

@@ -10,7 +10,7 @@ import type { AIProvider } from '../providers/types.js';
 import type { GenprConfig } from '../config/types.js';
 import { displayPRPreview } from './display.js';
 import { openInEditor } from '../utils/editor.js';
-import { createPR, editPR, type CreatePROptions } from '../github/pr.js';
+import { createPR, editPR, approvePR, type CreatePROptions } from '../github/pr.js';
 import { logger } from '../utils/logger.js';
 
 export type UserAction = 'create' | 'cancel' | 'feedback' | 'edit';
@@ -35,6 +35,22 @@ async function promptAction(isExistingPR: boolean): Promise<UserAction> {
   ]);
 
   return action;
+}
+
+/**
+ * Prompt user whether to approve the PR (default: no)
+ */
+async function promptApprove(): Promise<boolean> {
+  const { approve } = await inquirer.prompt<{ approve: boolean }>([
+    {
+      type: 'confirm',
+      name: 'approve',
+      message: 'Approve PR?',
+      default: false,
+    },
+  ]);
+
+  return approve;
 }
 
 /**
@@ -139,7 +155,7 @@ export async function runInteractiveLoop(
   _config: GenprConfig
 ): Promise<void> {
   let content = initialContent;
-  let lastResponse = initialResponse;
+  const lastResponse = initialResponse;
   const isExistingPR = !!prOptions.existingPrUrl;
 
   while (true) {
@@ -164,6 +180,8 @@ export async function runInteractiveLoop(
           return;
         }
 
+        let prUrl: string | null = null;
+
         if (isExistingPR) {
           // Update existing PR
           const spinner = ora('Updating PR...').start();
@@ -171,6 +189,7 @@ export async function runInteractiveLoop(
             await editPR(prOptions.existingPrUrl!, content.title, content.body);
             spinner.succeed('PR updated successfully');
             logger.success(prOptions.existingPrUrl!);
+            prUrl = prOptions.existingPrUrl!;
           } catch (error) {
             spinner.fail('Failed to update PR');
             logger.error(String(error));
@@ -187,12 +206,26 @@ export async function runInteractiveLoop(
               draft: prOptions.draft,
             };
 
-            const prUrl = await createPR(createOptions);
+            prUrl = await createPR(createOptions);
             spinner.succeed('PR created successfully');
             logger.success(prUrl);
           } catch (error) {
             spinner.fail('Failed to create PR');
             logger.error(String(error));
+          }
+        }
+
+        if (prUrl) {
+          const shouldApprove = await promptApprove();
+          if (shouldApprove) {
+            const spinner = ora('Approving PR...').start();
+            try {
+              await approvePR(prUrl);
+              spinner.succeed('PR approved');
+            } catch (error) {
+              spinner.fail('Failed to approve PR');
+              logger.error(String(error));
+            }
           }
         }
         return;

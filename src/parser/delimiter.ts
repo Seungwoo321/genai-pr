@@ -22,7 +22,7 @@ export function parseDelimiterResponse(raw: string): PRResult {
   const lines = content.split('\n');
 
   let title = '';
-  let bodyLines: string[] = [];
+  const bodyLines: string[] = [];
   let inBody = false;
 
   for (const line of lines) {

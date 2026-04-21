@@ -188,3 +188,17 @@ export async function editPR(prRef: string, title: string, body: string): Promis
 
   return result.stdout.trim();
 }
+
+/**
+ * Approve a PR via gh CLI
+ */
+export async function approvePR(prRef: string): Promise<void> {
+  const result = await execCommand('gh', [
+    'pr', 'review', prRef,
+    '--approve',
+  ], { timeout: 30000 });
+
+  if (result.exitCode !== 0) {
+    throw new Error(`Failed to approve PR: ${result.stderr}`);
+  }
+}
