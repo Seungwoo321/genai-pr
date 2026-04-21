@@ -1,5 +1,7 @@
 # Changelog
 
+## [0.4.0](https://github.com/Seungwoo321/genai-pr/compare/v0.4.0-beta.0...v0.4.0) (2026-04-21)
+
 ## [0.4.0-beta.0](https://github.com/Seungwoo321/genai-pr/compare/v0.3.0...v0.4.0-beta.0) (2026-04-21)
 
 ### Features
