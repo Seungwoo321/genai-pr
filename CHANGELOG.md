@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.4.0-beta.0](https://github.com/Seungwoo321/genai-pr/compare/v0.3.0...v0.4.0-beta.0) (2026-04-21)
+
+### Features
+
+* **cli:** add Codex CLI provider support ([63462fa](https://github.com/Seungwoo321/genai-pr/commit/63462fa01cabedd5cd52e2fc432b2294ba63ee88))
+
 ## [0.3.0](https://github.com/Seungwoo321/genai-pr/compare/v0.3.0-beta.1...v0.3.0) (2026-03-11)
 
 ## [0.3.0-beta.1](https://github.com/Seungwoo321/genai-pr/compare/v0.3.0-beta.0...v0.3.0-beta.1) (2026-03-11)

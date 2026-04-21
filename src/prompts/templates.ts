@@ -2,7 +2,7 @@
  * AI prompt templates for PR generation
  */
 
-export type ProviderPromptType = 'claude' | 'cursor';
+export type ProviderPromptType = 'claude' | 'cursor' | 'codex';
 
 const CLAUDE_PR_PROMPT = `You are a PR description generator.
 
@@ -62,7 +62,8 @@ const PR_SCHEMA = {
 };
 
 /**
- * Get system prompt for a provider
+ * Get system prompt for a provider.
+ * Cursor and Codex share the delimiter-format prompt; Claude uses the JSON-structured prompt.
  */
 export function getSystemPrompt(provider: ProviderPromptType): string {
   return provider === 'claude' ? CLAUDE_PR_PROMPT : CURSOR_PR_PROMPT;

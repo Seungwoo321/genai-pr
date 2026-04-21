@@ -12,16 +12,20 @@ export * from './config/index.js';
 export {
   createProvider,
   isValidProviderType,
+  normalizeProviderType,
   ClaudeCodeProvider,
   CursorCLIProvider,
+  CodexCLIProvider,
 } from './providers/index.js';
 export type {
   AIProvider,
   ProviderType,
+  ProviderAlias,
   ProviderOptions,
   ProviderStatus,
   ProviderResponse,
 } from './providers/types.js';
+export { PROVIDER_ALIASES, PROVIDER_CHOICES } from './providers/types.js';
 
 // Git utilities
 export {
