@@ -16,6 +16,8 @@ import {
   branchExists,
   hasCommitsBetween,
   resolveRemoteRef,
+  getSha,
+  countCommits,
 } from '../git/branch.js';
 import { getDetailedDiff, getChangedFiles, getDiffStat } from '../git/diff.js';
 import { getCommitLog, getCommitCount } from '../git/log.js';
@@ -51,6 +53,7 @@ export interface GenerateOptions {
   draft?: boolean;
   dryRun?: boolean;
   url?: string;
+  timeout?: string | number;
 }
 
 /**
@@ -172,7 +175,7 @@ async function generateFromLocalBranch(
     }
   }
 
-  // Resolve remote ref for accurate comparison (also validates branch exists)
+  // Resolve remote ref for base (also validates branch exists)
   const compareRef = await resolveRemoteRef(baseBranch);
   if (compareRef !== baseBranch) {
     logger.info(`Using remote ref: ${compareRef}`);
@@ -182,9 +185,39 @@ async function generateFromLocalBranch(
     process.exit(1);
   }
 
-  // Check for commits between branches
-  if (!(await hasCommitsBetween(compareRef, headBranch))) {
-    logger.warning(`No commits between ${baseBranch} and ${headBranch}`);
+  // Resolve remote ref for head. PR creation requires the head branch to exist on the remote,
+  // so we validate the remote state BEFORE doing any AI work.
+  const headCompareRef = await resolveRemoteRef(headBranch);
+
+  // Check 1: remote head branch must exist
+  if (headCompareRef === headBranch) {
+    logger.error(
+      `Remote branch 'origin/${headBranch}' does not exist.\n` +
+      `  Push your branch first: git push -u origin ${headBranch}`
+    );
+    process.exit(1);
+  }
+
+  // Check 2: local and remote head must be in sync (no unpushed commits)
+  const localSha = await getSha(headBranch);
+  const remoteSha = await getSha(headCompareRef);
+  if (localSha && remoteSha && localSha !== remoteSha) {
+    const aheadCount = await countCommits(headCompareRef, headBranch);
+    const behindCount = await countCommits(headBranch, headCompareRef);
+    const parts: string[] = [];
+    if (aheadCount > 0) parts.push(`${aheadCount} unpushed commit(s) on local`);
+    if (behindCount > 0) parts.push(`${behindCount} commit(s) on remote not in local`);
+    logger.error(
+      `Local branch '${headBranch}' is out of sync with '${headCompareRef}':\n` +
+      `  ${parts.join(', ')}\n` +
+      `  Push or pull to sync before creating a PR.`
+    );
+    process.exit(1);
+  }
+
+  // Check 3: commits between remote base and remote head (actual PR content)
+  if (!(await hasCommitsBetween(compareRef, headCompareRef))) {
+    logger.warning(`No commits between ${compareRef} and ${headCompareRef}`);
     process.exit(0);
   }
 
@@ -200,8 +233,8 @@ async function generateFromLocalBranch(
 
   // Get commit log early (needed for auto-detection)
   displayProgress(1, 3, 'Getting commit log...');
-  const commitLog = await getCommitLog(compareRef, headBranch);
-  const commitCount = await getCommitCount(compareRef, headBranch);
+  const commitLog = await getCommitLog(compareRef, headCompareRef);
+  const commitCount = await getCommitCount(compareRef, headCompareRef);
   console.log(`  ${commitCount} commit(s)`);
 
   // Select template
@@ -218,12 +251,12 @@ async function generateFromLocalBranch(
   displayTemplateInfo(template.name, template.source);
 
   displayProgress(2, 3, 'Getting diff stat...');
-  const changedFiles = await getChangedFiles(compareRef, headBranch);
-  const diffStat = await getDiffStat(compareRef, headBranch);
+  const changedFiles = await getChangedFiles(compareRef, headCompareRef);
+  const diffStat = await getDiffStat(compareRef, headCompareRef);
   console.log(`  ${changedFiles.length} file(s) changed`);
 
   displayProgress(3, 3, 'Getting detailed diff...');
-  const diff = await getDetailedDiff(compareRef, headBranch, config.maxDiffSize);
+  const diff = await getDetailedDiff(compareRef, headCompareRef, config.maxDiffSize);
   console.log(`  Diff size: ${diff.length} bytes`);
 
   // Generate and interact
@@ -297,8 +330,21 @@ async function resolveTemplate(options: GenerateOptions, headBranch?: string, co
  * Build config from options
  */
 function buildConfig(options: GenerateOptions): GenprConfig {
+  let timeoutMs = DEFAULT_CONFIG.timeout;
+  if (options.timeout !== undefined) {
+    const raw = typeof options.timeout === 'number'
+      ? options.timeout
+      : Number(options.timeout);
+    if (!Number.isFinite(raw) || raw <= 0) {
+      logger.error(`Invalid --timeout value: ${options.timeout}`);
+      process.exit(1);
+    }
+    timeoutMs = Math.round(raw * 1000);
+  }
+
   return {
     ...DEFAULT_CONFIG,
+    timeout: timeoutMs,
     titleLang: options.lang ?? options.titleLang ?? DEFAULT_CONFIG.titleLang,
     bodyLang: options.lang ?? options.bodyLang ?? DEFAULT_CONFIG.bodyLang,
   };

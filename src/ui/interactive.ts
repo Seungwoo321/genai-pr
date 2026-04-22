@@ -10,7 +10,7 @@ import type { AIProvider } from '../providers/types.js';
 import type { GenprConfig } from '../config/types.js';
 import { displayPRPreview } from './display.js';
 import { openInEditor } from '../utils/editor.js';
-import { createPR, editPR, approvePR, type CreatePROptions } from '../github/pr.js';
+import { createPR, editPR, enableAutoMerge, type CreatePROptions, type MergeMethod } from '../github/pr.js';
 import { logger } from '../utils/logger.js';
 
 export type UserAction = 'create' | 'cancel' | 'feedback' | 'edit';
@@ -38,19 +38,40 @@ async function promptAction(isExistingPR: boolean): Promise<UserAction> {
 }
 
 /**
- * Prompt user whether to approve the PR (default: no)
+ * Prompt user whether to enable auto-merge (default: no)
  */
-async function promptApprove(): Promise<boolean> {
-  const { approve } = await inquirer.prompt<{ approve: boolean }>([
+async function promptAutoMerge(): Promise<boolean> {
+  const { autoMerge } = await inquirer.prompt<{ autoMerge: boolean }>([
     {
       type: 'confirm',
-      name: 'approve',
-      message: 'Approve PR?',
+      name: 'autoMerge',
+      message: 'Enable auto-merge?',
       default: false,
     },
   ]);
 
-  return approve;
+  return autoMerge;
+}
+
+/**
+ * Prompt user to select a merge method (default: rebase)
+ */
+async function promptMergeMethod(): Promise<MergeMethod> {
+  const { method } = await inquirer.prompt<{ method: MergeMethod }>([
+    {
+      type: 'list',
+      name: 'method',
+      message: 'Merge method:',
+      choices: [
+        { value: 'rebase', name: 'rebase (preserve individual commits, linear history)' },
+        { value: 'squash', name: 'squash (combine all commits into one)' },
+        { value: 'merge',  name: 'merge  (create a merge commit)' },
+      ],
+      default: 'rebase',
+    },
+  ]);
+
+  return method;
 }
 
 /**
@@ -216,14 +237,15 @@ export async function runInteractiveLoop(
         }
 
         if (prUrl) {
-          const shouldApprove = await promptApprove();
-          if (shouldApprove) {
-            const spinner = ora('Approving PR...').start();
+          const shouldAutoMerge = await promptAutoMerge();
+          if (shouldAutoMerge) {
+            const method = await promptMergeMethod();
+            const spinner = ora(`Enabling auto-merge (${method})...`).start();
             try {
-              await approvePR(prUrl);
-              spinner.succeed('PR approved');
+              await enableAutoMerge(prUrl, method);
+              spinner.succeed(`Auto-merge enabled (${method})`);
             } catch (error) {
-              spinner.fail('Failed to approve PR');
+              spinner.fail('Failed to enable auto-merge');
               logger.error(String(error));
             }
           }

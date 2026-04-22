@@ -1,5 +1,21 @@
 # Changelog
 
+## [0.5.0-beta.1](https://github.com/Seungwoo321/genai-pr/compare/v0.5.0-beta.0...v0.5.0-beta.1) (2026-04-22)
+
+### Features
+
+* **preflight:** add remote branch validation before AI call ([f6c653d](https://github.com/Seungwoo321/genai-pr/commit/f6c653de20adb22052ebe73c0b428e1e635ebf1d))
+
+## [0.5.0-beta.0](https://github.com/Seungwoo321/genai-pr/compare/v0.4.0...v0.5.0-beta.0) (2026-04-22)
+
+### Features
+
+* **cli:** add timeout override and auto-merge flow ([4a3470c](https://github.com/Seungwoo321/genai-pr/commit/4a3470c8b066da2fc8adf95e46eb7a68b1ac8f25))
+
+### Documentation
+
+* **readme:** add Korean guide and auto-merge usage ([f225182](https://github.com/Seungwoo321/genai-pr/commit/f225182b4e650239bf5c9906cea4773687457def))
+
 ## [0.4.0](https://github.com/Seungwoo321/genai-pr/compare/v0.4.0-beta.0...v0.4.0) (2026-04-21)
 
 ## [0.4.0-beta.0](https://github.com/Seungwoo321/genai-pr/compare/v0.3.0...v0.4.0-beta.0) (2026-04-21)

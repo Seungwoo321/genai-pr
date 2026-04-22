@@ -32,6 +32,7 @@ program
   .option('--draft', 'Create as draft PR')
   .option('--dry-run', 'Preview PR content without creating')
   .option('--url <url>', 'Existing PR URL to regenerate description')
+  .option('--timeout <seconds>', 'AI provider timeout in seconds (default: 120)')
   .action(generateCommand);
 
 // Login command: genai-pr login <provider>
