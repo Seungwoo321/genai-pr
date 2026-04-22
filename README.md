@@ -6,6 +6,8 @@ AI-powered PR description generator using Claude Code, Cursor CLI, or Codex CLI.
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![GitHub](https://img.shields.io/github/stars/Seungwoo321/genai-pr?style=social)](https://github.com/Seungwoo321/genai-pr)
 
+> Read in other languages: [한국어](./README.ko.md)
+
 ## Features
 
 - **AI-powered PR descriptions** - Generate PR title and body using Claude Code, Cursor CLI, or Codex CLI
@@ -14,6 +16,7 @@ AI-powered PR description generator using Claude Code, Cursor CLI, or Codex CLI.
 - **Multi-language support** - Generate titles and body in English or Korean
 - **Interactive workflow** - Review, provide feedback, edit in editor, and refine before creating
 - **GitHub CLI integration** - Creates PRs directly via `gh pr create`
+- **Auto-merge setup** - Optionally enable auto-merge after PR creation, with a choice of merge method (rebase / squash / merge)
 
 ## How It Works
 
@@ -43,7 +46,11 @@ flowchart TD
     O -->|e| S[Edit in $EDITOR]
     R --> H
     S --> N
-    P --> T[Done]
+    P --> U{Enable auto-merge?}
+    U -->|Yes| V[Select merge method<br/>rebase / squash / merge]
+    U -->|No| T[Done]
+    V --> W[gh pr merge --auto]
+    W --> T[Done]
 ```
 
 ## Prerequisites
@@ -158,6 +165,26 @@ After generating the PR description, you'll see an interactive menu:
 | `[n]` | Cancel |
 | `[f]` | Provide feedback to regenerate |
 | `[e]` | Edit in external editor (`$EDITOR`) |
+
+### Auto-merge
+
+After the PR is created (or updated), you'll be asked:
+
+```
+? Enable auto-merge? (y/N)
+```
+
+If you answer `y`, you'll be prompted to pick a merge method:
+
+| Method | Behavior | When to use |
+|--------|----------|-------------|
+| `rebase` (default) | Replay each commit onto the base branch. All individual commits are preserved as a linear history. | You want each commit from the feature branch to remain visible on the base branch (e.g. carefully split commits). |
+| `squash` | Combine all commits in the PR into a single commit on the base branch. | You don't care about intermediate commits and prefer a single summary commit. |
+| `merge` | Create a merge commit that joins the PR branch into the base branch, preserving all commits and the branch structure. | You want to keep both individual commits and the branch history. |
+
+The selected method is executed via `gh pr merge --auto --<method>`. The PR will be merged automatically once all required checks pass.
+
+> Note: This requires **"Allow auto-merge"** to be enabled in the repository settings (`Settings → General → Pull Requests`). If it's disabled, `gh` will report an error and auto-merge won't be configured.
 
 ## Options
 
