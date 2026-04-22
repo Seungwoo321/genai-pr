@@ -189,16 +189,21 @@ export async function editPR(prRef: string, title: string, body: string): Promis
   return result.stdout.trim();
 }
 
+export type MergeMethod = 'rebase' | 'squash' | 'merge';
+
 /**
- * Approve a PR via gh CLI
+ * Enable auto-merge on a PR via gh CLI.
+ * The PR will be merged automatically once required checks pass.
  */
-export async function approvePR(prRef: string): Promise<void> {
+export async function enableAutoMerge(prRef: string, method: MergeMethod): Promise<void> {
+  const methodFlag = `--${method}`;
   const result = await execCommand('gh', [
-    'pr', 'review', prRef,
-    '--approve',
+    'pr', 'merge', prRef,
+    '--auto',
+    methodFlag,
   ], { timeout: 30000 });
 
   if (result.exitCode !== 0) {
-    throw new Error(`Failed to approve PR: ${result.stderr}`);
+    throw new Error(`Failed to enable auto-merge: ${result.stderr}`);
   }
 }

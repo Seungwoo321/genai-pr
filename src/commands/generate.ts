@@ -51,6 +51,7 @@ export interface GenerateOptions {
   draft?: boolean;
   dryRun?: boolean;
   url?: string;
+  timeout?: string | number;
 }
 
 /**
@@ -297,8 +298,21 @@ async function resolveTemplate(options: GenerateOptions, headBranch?: string, co
  * Build config from options
  */
 function buildConfig(options: GenerateOptions): GenprConfig {
+  let timeoutMs = DEFAULT_CONFIG.timeout;
+  if (options.timeout !== undefined) {
+    const raw = typeof options.timeout === 'number'
+      ? options.timeout
+      : Number(options.timeout);
+    if (!Number.isFinite(raw) || raw <= 0) {
+      logger.error(`Invalid --timeout value: ${options.timeout}`);
+      process.exit(1);
+    }
+    timeoutMs = Math.round(raw * 1000);
+  }
+
   return {
     ...DEFAULT_CONFIG,
+    timeout: timeoutMs,
     titleLang: options.lang ?? options.titleLang ?? DEFAULT_CONFIG.titleLang,
     bodyLang: options.lang ?? options.bodyLang ?? DEFAULT_CONFIG.bodyLang,
   };
