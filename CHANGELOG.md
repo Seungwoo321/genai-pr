@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.5.0-beta.1](https://github.com/Seungwoo321/genai-pr/compare/v0.5.0-beta.0...v0.5.0-beta.1) (2026-04-22)
+
+### Features
+
+* **preflight:** add remote branch validation before AI call ([f6c653d](https://github.com/Seungwoo321/genai-pr/commit/f6c653de20adb22052ebe73c0b428e1e635ebf1d))
+
 ## [0.5.0-beta.0](https://github.com/Seungwoo321/genai-pr/compare/v0.4.0...v0.5.0-beta.0) (2026-04-22)
 
 ### Features

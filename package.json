@@ -1,6 +1,6 @@
 {
   "name": "genai-pr",
-  "version": "0.5.0-beta.0",
+  "version": "0.5.0-beta.1",
   "description": "AI-powered PR description generator using Claude Code, Cursor CLI, or Codex CLI",
   "type": "module",
   "main": "./dist/index.js",
