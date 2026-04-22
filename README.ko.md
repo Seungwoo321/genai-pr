@@ -17,6 +17,7 @@ Claude Code, Cursor CLI, Codex CLI를 활용한 AI 기반 PR 설명 생성 도�
 - **인터랙티브 워크플로우** - PR 생성 전에 검토, 피드백, 에디터 편집, 재생성 가능
 - **GitHub CLI 연동** - `gh pr create`를 통해 직접 PR 생성
 - **자동 머지 설정** - PR 생성 후 선택적으로 auto-merge 활성화, 머지 방식(rebase / squash / merge) 선택 가능
+- **사전 검증(Pre-flight checks)** - AI 호출 전에 원격 브랜치 상태(원격 브랜치 누락, 푸시되지 않은 커밋, 변경사항 없음)를 검증하여 PR 생성이 불가능한 경우 토큰 낭비를 방지
 
 ## 동작 방식
 
@@ -24,9 +25,11 @@ Claude Code, Cursor CLI, Codex CLI를 활용한 AI 기반 PR 설명 생성 도�
 flowchart TD
     A[시작: genai-pr] --> B{PR URL 제공됨?}
     B -->|예| C[gh CLI로 PR 정보 조회]
-    B -->|아니오| D[로컬 Git 데이터 수집]
+    B -->|아니오| PF[사전 검증]
+    PF -->|실패| PFX[안내 메시지 출력 후 중단]
+    PF -->|통과| D[원격 Git 데이터 수집]
     C --> E[커밋, diff, 변경 파일 조회]
-    D --> F[git diff base..head + git log]
+    D --> F[git diff origin/base..origin/head + git log]
     E --> G[템플릿 선택]
     F --> G
     G --> H[AI 프롬프트 빌드]
@@ -154,6 +157,18 @@ genai-pr templates
 # 사용자 정의 템플릿 디렉토리 포함
 genai-pr templates --template-dir ./my-templates
 ```
+
+### 사전 검증 (Pre-flight Checks)
+
+`genai-pr`는 AI 호출 **전에** 원격 브랜치 상태를 검증하여, 생성이 불가능한 PR에 AI 토큰을 낭비하지 않도록 합니다. 이 검증은 로컬 브랜치 모드에서만 동작하며 (`--url` 모드 제외), `--dry-run`일 때에도 동일하게 적용됩니다.
+
+| # | 검증 항목 | 실패 시 메시지 | 종료 코드 |
+|---|-----------|----------------|-----------|
+| 1 | `origin/<head>` 존재 여부 | `Remote branch 'origin/<head>' does not exist. Push your branch first: git push -u origin <head>` | `1` |
+| 2 | 로컬 `<head>` SHA == `origin/<head>` SHA | `Local branch '<head>' is out of sync with 'origin/<head>': N unpushed commit(s) on local / M commit(s) on remote not in local. Push or pull to sync before creating a PR.` | `1` |
+| 3 | `origin/<base>..origin/<head>`에 커밋 존재 | `No commits between origin/<base> and origin/<head>` | `0` |
+
+diff와 커밋 로그는 모두 **원격 ref**(`origin/<base>..origin/<head>`)를 기준으로 수집되므로, AI가 보는 내용과 실제 PR에 올라갈 내용이 항상 일치합니다.
 
 ### 인터랙티브 옵션
 

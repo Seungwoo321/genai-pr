@@ -17,6 +17,7 @@ AI-powered PR description generator using Claude Code, Cursor CLI, or Codex CLI.
 - **Interactive workflow** - Review, provide feedback, edit in editor, and refine before creating
 - **GitHub CLI integration** - Creates PRs directly via `gh pr create`
 - **Auto-merge setup** - Optionally enable auto-merge after PR creation, with a choice of merge method (rebase / squash / merge)
+- **Pre-flight checks** - Validate remote branch state (missing remote, unpushed commits, no diff) before calling the AI, so no tokens are wasted on PRs that can't be created
 
 ## How It Works
 
@@ -24,9 +25,11 @@ AI-powered PR description generator using Claude Code, Cursor CLI, or Codex CLI.
 flowchart TD
     A[Start: genai-pr] --> B{PR URL provided?}
     B -->|Yes| C[Fetch PR info via gh CLI]
-    B -->|No| D[Collect local Git data]
+    B -->|No| PF[Pre-flight checks]
+    PF -->|fail| PFX[Abort with guidance]
+    PF -->|pass| D[Collect remote Git data]
     C --> E[Get commits, diff, changed files]
-    D --> F[git diff base..head + git log]
+    D --> F[git diff origin/base..origin/head + git log]
     E --> G[Select Template]
     F --> G
     G --> H[Build AI Prompt]
@@ -154,6 +157,18 @@ genai-pr templates
 # Include custom template directory
 genai-pr templates --template-dir ./my-templates
 ```
+
+### Pre-flight Checks
+
+Before calling the AI, `genai-pr` validates the remote state of your branch so that it doesn't waste AI tokens on a PR that can't actually be created. These checks only run in the local-branch mode (not in `--url` mode) and apply even with `--dry-run`.
+
+| # | Check | Failure message | Exit |
+|---|-------|-----------------|------|
+| 1 | `origin/<head>` exists | `Remote branch 'origin/<head>' does not exist. Push your branch first: git push -u origin <head>` | `1` |
+| 2 | local `<head>` SHA == `origin/<head>` SHA | `Local branch '<head>' is out of sync with 'origin/<head>': N unpushed commit(s) on local / M commit(s) on remote not in local. Push or pull to sync before creating a PR.` | `1` |
+| 3 | `origin/<base>..origin/<head>` has commits | `No commits between origin/<base> and origin/<head>` | `0` |
+
+Because the diff and commit log are sourced from the **remote** refs (`origin/<base>..origin/<head>`), the AI always sees the exact content that will end up in the PR.
 
 ### Interactive Options
 

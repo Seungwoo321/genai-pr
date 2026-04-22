@@ -113,3 +113,27 @@ export async function hasCommitsBetween(baseBranch: string, headBranch: string):
     return false;
   }
 }
+
+/**
+ * Resolve a ref to its SHA. Returns null if the ref doesn't exist.
+ */
+export async function getSha(ref: string): Promise<string | null> {
+  try {
+    const sha = await git.revparse(['--verify', ref]);
+    return sha.trim();
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Count commits in `from..to`. Returns 0 on any failure.
+ */
+export async function countCommits(from: string, to: string): Promise<number> {
+  try {
+    const log = await git.log({ from, to });
+    return log.total;
+  } catch {
+    return 0;
+  }
+}
