@@ -15,6 +15,7 @@ AI-powered PR description generator using Claude Code, Cursor CLI, or Codex CLI.
 - **Existing PR support** - Regenerate descriptions for existing PRs via `--url`
 - **Multi-language support** - Generate titles and body in English or Korean
 - **Interactive workflow** - Review, provide feedback, edit in editor, and refine before creating
+- **Non-interactive mode** - `--yes` skips the [y] prompt for CI/hook-driven runs; combine with `--auto-merge` to fully automate
 - **GitHub CLI integration** - Creates PRs directly via `gh pr create`
 - **Auto-merge setup** - Optionally enable auto-merge after PR creation, with a choice of merge method (rebase / squash / merge)
 - **Pre-flight checks** - Validate remote branch state (missing remote, unpushed commits, no diff) before calling the AI, so no tokens are wasted on PRs that can't be created
@@ -181,6 +182,32 @@ After generating the PR description, you'll see an interactive menu:
 | `[f]` | Provide feedback to regenerate |
 | `[e]` | Edit in external editor (`$EDITOR`) |
 
+### Non-interactive mode (`--yes`)
+
+For CI, pre-commit hooks, or any unattended workflow, `--yes` skips the
+`[y]/[n]/[f]/[e]` prompt and submits the generated PR directly. It also skips
+the auto-merge prompt (defaults to disabled — pair with `--auto-merge` to
+enable it). If PR creation or update fails, the process exits with a non-zero
+status so the caller can branch on it.
+
+```bash
+# Auto-create PR, no auto-merge
+genai-pr claude --yes
+
+# Auto-create + enable auto-merge (rebase, the default method)
+genai-pr claude --yes --auto-merge
+
+# Auto-create + squash auto-merge
+genai-pr claude --yes --auto-merge squash
+
+# Regenerate an existing PR description non-interactively
+genai-pr claude --yes --url https://github.com/owner/repo/pull/15
+```
+
+`--yes` is non-interactive by contract: there is no retry, feedback, or editor
+loop. If the AI output needs refinement, run without `--yes` interactively
+first.
+
 ### Auto-merge
 
 After the PR is created (or updated), you'll be asked:
@@ -201,6 +228,16 @@ The selected method is executed via `gh pr merge --auto --<method>`. The PR will
 
 > Note: This requires **"Allow auto-merge"** to be enabled in the repository settings (`Settings → General → Pull Requests`). If it's disabled, `gh` will report an error and auto-merge won't be configured.
 
+You can also pre-answer both auto-merge prompts up front with
+`--auto-merge [method]` (default method: `rebase`). When supplied, the prompts
+are skipped in both interactive and `--yes` runs:
+
+```bash
+genai-pr claude --auto-merge             # interactive create, auto-merge (rebase) pre-set
+genai-pr claude --auto-merge squash      # interactive create, squash auto-merge pre-set
+genai-pr claude --yes --auto-merge merge # fully non-interactive create + merge-commit auto-merge
+```
+
 ## Options
 
 | Option | Description | Default |
@@ -216,6 +253,9 @@ The selected method is executed via `gh pr merge --auto --<method>`. The PR will
 | `--draft` | Create as draft PR | `false` |
 | `--dry-run` | Preview without creating PR | `false` |
 | `--url <url>` | Existing PR URL to regenerate | - |
+| `--timeout <seconds>` | AI provider timeout in seconds | `120` |
+| `-y, --yes` | Non-interactive: auto-create/update PR, skip prompts, exit non-zero on failure | `false` |
+| `--auto-merge [method]` | Enable auto-merge after PR creation (`rebase`\|`squash`\|`merge`) | disabled / `rebase` when bare |
 
 ## Built-in Templates
 
