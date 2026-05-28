@@ -160,6 +160,82 @@ Please regenerate the PR title and body based on the feedback.`;
 }
 
 /**
+ * Submit (create or update) the PR and, when requested, enable auto-merge.
+ * Used by both the interactive [y] path and the `--yes` non-interactive path
+ * so the two share identical wiring against the GitHub API.
+ *
+ * Returns `true` on success (PR created/updated and any requested auto-merge
+ * enabled), `false` if PR creation/update itself failed. Auto-merge failures
+ * are logged but do not flip the result — the PR has already landed.
+ */
+async function submitPR(
+  content: PRContent,
+  prOptions: {
+    baseBranch: string;
+    headBranch: string;
+    draft: boolean;
+    dryRun: boolean;
+    existingPrUrl: string | null;
+  },
+  autoMergeMethod: MergeMethod | null
+): Promise<boolean> {
+  if (prOptions.dryRun) {
+    logger.success('Dry run - PR not created');
+    console.log(`\nTitle: ${content.title}`);
+    console.log(`\n${content.body}`);
+    return true;
+  }
+
+  const isExistingPR = !!prOptions.existingPrUrl;
+  let prUrl: string | null = null;
+
+  if (isExistingPR) {
+    const spinner = ora('Updating PR...').start();
+    try {
+      await editPR(prOptions.existingPrUrl!, content.title, content.body);
+      spinner.succeed('PR updated successfully');
+      logger.success(prOptions.existingPrUrl!);
+      prUrl = prOptions.existingPrUrl!;
+    } catch (error) {
+      spinner.fail('Failed to update PR');
+      logger.error(String(error));
+      return false;
+    }
+  } else {
+    const spinner = ora('Creating PR...').start();
+    try {
+      const createOptions: CreatePROptions = {
+        title: content.title,
+        body: content.body,
+        baseBranch: prOptions.baseBranch,
+        headBranch: prOptions.headBranch,
+        draft: prOptions.draft,
+      };
+      prUrl = await createPR(createOptions);
+      spinner.succeed('PR created successfully');
+      logger.success(prUrl);
+    } catch (error) {
+      spinner.fail('Failed to create PR');
+      logger.error(String(error));
+      return false;
+    }
+  }
+
+  if (prUrl && autoMergeMethod) {
+    const spinner = ora(`Enabling auto-merge (${autoMergeMethod})...`).start();
+    try {
+      await enableAutoMerge(prUrl, autoMergeMethod);
+      spinner.succeed(`Auto-merge enabled (${autoMergeMethod})`);
+    } catch (error) {
+      spinner.fail('Failed to enable auto-merge');
+      logger.error(String(error));
+    }
+  }
+
+  return true;
+}
+
+/**
  * Main interactive loop
  */
 export async function runInteractiveLoop(
@@ -172,12 +248,39 @@ export async function runInteractiveLoop(
     draft: boolean;
     dryRun: boolean;
     existingPrUrl: string | null;
+    /**
+     * Non-interactive mode (from `--yes`). Skips the [y]/[n]/[f]/[e] prompt
+     * and the auto-merge prompt, then submits the initial proposal directly.
+     * On submission failure, sets `process.exitCode = 1` so CI/hook callers
+     * can branch on it. Auto-merge is opt-in via `autoMergeMethod`.
+     */
+    autoConfirm?: boolean;
+    /**
+     * Pre-resolved auto-merge method (from `--auto-merge`). When set, skips
+     * the auto-merge prompt in the interactive path and is used directly in
+     * the `--yes` path. `null` disables auto-merge.
+     */
+    autoMergeMethod?: MergeMethod | null;
   },
   _config: GenprConfig
 ): Promise<void> {
   let content = initialContent;
   const lastResponse = initialResponse;
   const isExistingPR = !!prOptions.existingPrUrl;
+  const presetAutoMerge = prOptions.autoMergeMethod ?? null;
+
+  // --yes branch: no prompt, no retry. The interactive loop assumes an operator
+  // can choose Create / Cancel / Feedback / Edit on each iteration; an
+  // unattended run has no such operator, so a single attempt is the contract.
+  // Submission failure surfaces as a non-zero exit code for CI/hook callers.
+  if (prOptions.autoConfirm) {
+    displayPRPreview(content, prOptions.baseBranch, prOptions.headBranch);
+    const ok = await submitPR(content, prOptions, presetAutoMerge);
+    if (!ok) {
+      process.exitCode = 1;
+    }
+    return;
+  }
 
   while (true) {
     displayPRPreview(content, prOptions.baseBranch, prOptions.headBranch);
@@ -194,62 +297,16 @@ export async function runInteractiveLoop(
 
     switch (action) {
       case 'create': {
-        if (prOptions.dryRun) {
-          logger.success('Dry run - PR not created');
-          console.log(`\nTitle: ${content.title}`);
-          console.log(`\n${content.body}`);
-          return;
-        }
-
-        let prUrl: string | null = null;
-
-        if (isExistingPR) {
-          // Update existing PR
-          const spinner = ora('Updating PR...').start();
-          try {
-            await editPR(prOptions.existingPrUrl!, content.title, content.body);
-            spinner.succeed('PR updated successfully');
-            logger.success(prOptions.existingPrUrl!);
-            prUrl = prOptions.existingPrUrl!;
-          } catch (error) {
-            spinner.fail('Failed to update PR');
-            logger.error(String(error));
-          }
-        } else {
-          // Create new PR
-          const spinner = ora('Creating PR...').start();
-          try {
-            const createOptions: CreatePROptions = {
-              title: content.title,
-              body: content.body,
-              baseBranch: prOptions.baseBranch,
-              headBranch: prOptions.headBranch,
-              draft: prOptions.draft,
-            };
-
-            prUrl = await createPR(createOptions);
-            spinner.succeed('PR created successfully');
-            logger.success(prUrl);
-          } catch (error) {
-            spinner.fail('Failed to create PR');
-            logger.error(String(error));
-          }
-        }
-
-        if (prUrl) {
+        // `--auto-merge` pre-answers both prompts (enable + method). Without it,
+        // ask the user whether to enable auto-merge and (if yes) which method.
+        let resolvedMerge: MergeMethod | null = presetAutoMerge;
+        if (!prOptions.dryRun && resolvedMerge === null) {
           const shouldAutoMerge = await promptAutoMerge();
           if (shouldAutoMerge) {
-            const method = await promptMergeMethod();
-            const spinner = ora(`Enabling auto-merge (${method})...`).start();
-            try {
-              await enableAutoMerge(prUrl, method);
-              spinner.succeed(`Auto-merge enabled (${method})`);
-            } catch (error) {
-              spinner.fail('Failed to enable auto-merge');
-              logger.error(String(error));
-            }
+            resolvedMerge = await promptMergeMethod();
           }
         }
+        await submitPR(content, prOptions, resolvedMerge);
         return;
       }
 

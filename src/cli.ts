@@ -33,6 +33,17 @@ program
   .option('--dry-run', 'Preview PR content without creating')
   .option('--url <url>', 'Existing PR URL to regenerate description')
   .option('--timeout <seconds>', 'AI provider timeout in seconds (default: 120)')
+  .option(
+    '-y, --yes',
+    'Non-interactive: auto-create/update PR without the [y] prompt. Skips ' +
+      'feedback/edit and auto-merge prompts (use --auto-merge to enable it). ' +
+      'Exits non-zero if creation/update fails.'
+  )
+  .option(
+    '--auto-merge [method]',
+    'Enable auto-merge after PR creation. Optional method: rebase|squash|merge (default: rebase). ' +
+      'Skips the auto-merge prompt — useful with --yes for CI/automation.'
+  )
   .action(generateCommand);
 
 // Login command: genai-pr login <provider>
@@ -78,6 +89,10 @@ Examples:
   $ genai-pr claude --draft                       # Create draft PR
   $ genai-pr claude --dry-run                     # Preview without creating
   $ genai-pr claude --url https://github.com/owner/repo/pull/15
+
+  $ genai-pr claude --yes                         # Non-interactive: auto-create PR
+  $ genai-pr claude --yes --auto-merge            # CI: auto-create + auto-merge (rebase)
+  $ genai-pr claude --yes --auto-merge squash     # CI: auto-create + squash auto-merge
 
   $ genai-pr login codex                          # Login to Codex
   $ genai-pr status claude                        # Check status

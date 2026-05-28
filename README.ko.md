@@ -16,6 +16,7 @@ Claude Code, Cursor CLI, Codex CLI를 활용한 AI 기반 PR 설명 생성 도�
 - **다국어 지원** - 영어 또는 한국어로 제목과 본문 생성
 - **인터랙티브 워크플로우** - PR 생성 전에 검토, 피드백, 에디터 편집, 재생성 가능
 - **GitHub CLI 연동** - `gh pr create`를 통해 직접 PR 생성
+- **비인터랙티브 모드** - `--yes` 로 [y] 프롬프트 없이 자동 진행 (CI/훅 친화). `--auto-merge` 와 함께 쓰면 완전 자동화 가능
 - **자동 머지 설정** - PR 생성 후 선택적으로 auto-merge 활성화, 머지 방식(rebase / squash / merge) 선택 가능
 - **사전 검증(Pre-flight checks)** - AI 호출 전에 원격 브랜치 상태(원격 브랜치 누락, 푸시되지 않은 커밋, 변경사항 없음)를 검증하여 PR 생성이 불가능한 경우 토큰 낭비를 방지
 
@@ -181,6 +182,30 @@ PR 설명 생성 후 다음과 같은 인터랙티브 메뉴가 표시됩니다:
 | `[f]` | 피드백을 입력해 재생성 |
 | `[e]` | 외부 에디터(`$EDITOR`)에서 편집 |
 
+### 비인터랙티브 모드 (`--yes`)
+
+CI, pre-commit 훅, 기타 무인 워크플로우용 옵션입니다. `--yes` 는 `[y]/[n]/[f]/[e]`
+프롬프트를 건너뛰고 생성된 PR을 바로 제출합니다. 자동 머지 프롬프트도 건너뛰며
+기본은 비활성(머지 설정 안 함) — 활성화하려면 `--auto-merge` 와 함께 사용하세요.
+PR 생성/업데이트가 실패하면 호출자가 분기할 수 있도록 0이 아닌 종료 코드로 끝납니다.
+
+```bash
+# 자동 PR 생성, 자동 머지 없음
+genai-pr claude --yes
+
+# 자동 PR 생성 + 자동 머지(rebase, 기본 방식)
+genai-pr claude --yes --auto-merge
+
+# 자동 PR 생성 + squash 자동 머지
+genai-pr claude --yes --auto-merge squash
+
+# 기존 PR 설명 비인터랙티브 재생성
+genai-pr claude --yes --url https://github.com/owner/repo/pull/15
+```
+
+`--yes` 는 계약상 비인터랙티브입니다 — 재시도/피드백/에디터 루프가 없습니다.
+AI 출력을 다듬어야 한다면 먼저 `--yes` 없이 인터랙티브로 실행하세요.
+
 ### 자동 머지 (Auto-merge)
 
 PR이 생성(또는 업데이트)된 후 다음 질문이 표시됩니다:
@@ -201,6 +226,16 @@ PR이 생성(또는 업데이트)된 후 다음 질문이 표시됩니다:
 
 > 참고: 저장소 설정의 **"Allow auto-merge"**가 활성화되어 있어야 합니다 (`Settings → General → Pull Requests`). 비활성 상태라면 `gh`가 오류를 반환하고 auto-merge가 설정되지 않습니다.
 
+`--auto-merge [method]` 를 미리 지정해 두 개의 프롬프트를 한 번에 답변할 수도
+있습니다 (기본 방식: `rebase`). 지정 시 인터랙티브/`--yes` 모두에서 프롬프트가
+생략됩니다:
+
+```bash
+genai-pr claude --auto-merge             # 인터랙티브 생성, 자동 머지(rebase) 사전 지정
+genai-pr claude --auto-merge squash      # 인터랙티브 생성, squash 자동 머지 사전 지정
+genai-pr claude --yes --auto-merge merge # 완전 비인터랙티브 + merge-commit 자동 머지
+```
+
 ## 옵션
 
 | 옵션 | 설명 | 기본값 |
@@ -216,6 +251,9 @@ PR이 생성(또는 업데이트)된 후 다음 질문이 표시됩니다:
 | `--draft` | 드래프트 PR로 생성 | `false` |
 | `--dry-run` | PR 생성 없이 미리보기 | `false` |
 | `--url <url>` | 재생성할 기존 PR URL | - |
+| `--timeout <seconds>` | AI 제공자 타임아웃 (초) | `120` |
+| `-y, --yes` | 비인터랙티브: 프롬프트 건너뛰고 PR 자동 생성/업데이트, 실패 시 0이 아닌 종료 코드 | `false` |
+| `--auto-merge [method]` | PR 생성 후 자동 머지 활성화 (`rebase`\|`squash`\|`merge`) | 비활성 / 인자 없이 쓰면 `rebase` |
 
 ## 내장 템플릿
 
