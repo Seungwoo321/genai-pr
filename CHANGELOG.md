@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.6.0-beta.0](https://github.com/Seungwoo321/genai-pr/compare/v0.5.0...v0.6.0-beta.0) (2026-05-28)
+
+### Features
+
+* **cli:** add non-interactive PR submission flow ([8594550](https://github.com/Seungwoo321/genai-pr/commit/85945500996bfb029d483c74bde5c0779f11c105))
+
+### Documentation
+
+* **readme:** document non-interactive and auto-merge flags ([cb25fe7](https://github.com/Seungwoo321/genai-pr/commit/cb25fe7a431efcd80098e7f70b63f3572f8be15f))
+
 ## [0.5.0](https://github.com/Seungwoo321/genai-pr/compare/v0.5.0-beta.1...v0.5.0) (2026-04-22)
 
 ## [0.5.0-beta.1](https://github.com/Seungwoo321/genai-pr/compare/v0.5.0-beta.0...v0.5.0-beta.1) (2026-04-22)

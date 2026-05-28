@@ -35,6 +35,7 @@ import {
   getPRDiffStat,
 } from '../github/pr.js';
 import { runInteractiveLoop, promptTemplateSelection, promptBaseBranch } from '../ui/interactive.js';
+import type { MergeMethod } from '../github/pr.js';
 import { displayAnalysisStart, displayProgress, displayTemplateInfo } from '../ui/display.js';
 import { validateTitleLength } from '../utils/validation.js';
 import { logger } from '../utils/logger.js';
@@ -54,6 +55,29 @@ export interface GenerateOptions {
   dryRun?: boolean;
   url?: string;
   timeout?: string | number;
+  yes?: boolean;
+  // commander gives `true` for a bare `--auto-merge` and the method string when
+  // a value follows (e.g. `--auto-merge squash`). `false`/`undefined` ⇒ disabled.
+  autoMerge?: boolean | string;
+}
+
+const AUTO_MERGE_METHODS: readonly MergeMethod[] = ['rebase', 'squash', 'merge'];
+
+/**
+ * Resolve --auto-merge into either a concrete method or `null` (disabled).
+ * `--auto-merge` alone → 'rebase' (matches the interactive prompt's default).
+ */
+function resolveAutoMerge(value: boolean | string | undefined): MergeMethod | null {
+  if (value === undefined || value === false) return null;
+  if (value === true) return 'rebase';
+  const method = value.toLowerCase();
+  if (!AUTO_MERGE_METHODS.includes(method as MergeMethod)) {
+    logger.error(
+      `Invalid --auto-merge method: '${value}'. Expected one of: ${AUTO_MERGE_METHODS.join(', ')}.`
+    );
+    process.exit(1);
+  }
+  return method as MergeMethod;
 }
 
 /**
@@ -416,6 +440,8 @@ async function generateAndInteract(
         draft: options.draft ?? false,
         dryRun: options.dryRun ?? false,
         existingPrUrl,
+        autoConfirm: options.yes ?? false,
+        autoMergeMethod: resolveAutoMerge(options.autoMerge),
       },
       config
     );
