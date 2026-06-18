@@ -35,9 +35,10 @@ program
   .option('--timeout <seconds>', 'AI provider timeout in seconds (default: 120)')
   .option(
     '-y, --yes',
-    'Non-interactive: auto-create/update PR without the [y] prompt. Skips ' +
-      'feedback/edit and auto-merge prompts (use --auto-merge to enable it). ' +
-      'Exits non-zero if creation/update fails.'
+    'Non-interactive: auto-create/update PR without any prompt. Auto-detects the ' +
+      'template (unless -t/--auto given) and uses the default base branch (unless ' +
+      '-b/--base given). Skips feedback/edit and auto-merge prompts (use --auto-merge ' +
+      'to enable it). Exits non-zero if creation/update fails.'
   )
   .option(
     '--auto-merge [method]',
