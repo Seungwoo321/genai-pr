@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.6.1-beta.0](https://github.com/Seungwoo321/genai-pr/compare/v0.6.0...v0.6.1-beta.0) (2026-06-18)
+
+### Bug Fixes
+
+* **cli:** make --yes fully non-interactive (no template/base prompts) ([09f0621](https://github.com/Seungwoo321/genai-pr/commit/09f0621d8446c0291d655f56734cd33dfdc2e98b))
+
 ## [0.6.0](https://github.com/Seungwoo321/genai-pr/compare/v0.6.0-beta.0...v0.6.0) (2026-05-28)
 
 ## [0.6.0-beta.0](https://github.com/Seungwoo321/genai-pr/compare/v0.5.0...v0.6.0-beta.0) (2026-05-28)
