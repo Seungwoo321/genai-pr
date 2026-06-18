@@ -192,9 +192,10 @@ async function generateFromLocalBranch(
     if (branches.length === 1) {
       baseBranch = branches[0];
       logger.success(`Auto-selected base branch: ${baseBranch}`);
-    } else if (branches.length > 1) {
+    } else if (branches.length > 1 && !options.yes) {
       baseBranch = await promptBaseBranch(branches, defaultBase);
     } else {
+      // `--yes` (or no candidate branches): use the default base without prompting.
       baseBranch = defaultBase;
     }
   }
@@ -328,12 +329,19 @@ async function resolveTemplate(options: GenerateOptions, headBranch?: string, co
   let templateName = options.template;
 
   if (!templateName) {
-    const templates = listTemplates({ templateDir: options.templateDir });
-    if (templates.length === 0) {
-      logger.error('No templates found');
-      process.exit(1);
+    // `--yes` is a non-interactive contract: no prompt may block the run.
+    // Without an explicit -t/--auto, fall back to auto-detection instead of
+    // the interactive picker (which crashes on a non-TTY stdin).
+    if (options.yes) {
+      templateName = 'auto';
+    } else {
+      const templates = listTemplates({ templateDir: options.templateDir });
+      if (templates.length === 0) {
+        logger.error('No templates found');
+        process.exit(1);
+      }
+      templateName = await promptTemplateSelection(templates.map((t) => t.name));
     }
-    templateName = await promptTemplateSelection(templates.map((t) => t.name));
   }
 
   // auto selected from CLI --auto or interactive prompt

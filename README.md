@@ -184,11 +184,16 @@ After generating the PR description, you'll see an interactive menu:
 
 ### Non-interactive mode (`--yes`)
 
-For CI, pre-commit hooks, or any unattended workflow, `--yes` skips the
-`[y]/[n]/[f]/[e]` prompt and submits the generated PR directly. It also skips
-the auto-merge prompt (defaults to disabled — pair with `--auto-merge` to
-enable it). If PR creation or update fails, the process exits with a non-zero
-status so the caller can branch on it.
+For CI, pre-commit hooks, or any unattended workflow, `--yes` runs with **no
+prompts at all**. It submits the generated PR directly, and resolves every
+choice that would otherwise be interactive:
+
+- **Template** — auto-detected from the branch name/commits, unless `-t/--template` or `--auto` is given.
+- **Base branch** — the default base branch is used, unless `-b/--base` is given.
+- **Action / auto-merge** — the `[y]/[n]/[f]/[e]` and auto-merge prompts are skipped (auto-merge stays disabled — pair with `--auto-merge` to enable it).
+
+If PR creation or update fails, the process exits with a non-zero status so the
+caller can branch on it.
 
 ```bash
 # Auto-create PR, no auto-merge
