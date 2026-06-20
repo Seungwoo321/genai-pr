@@ -1,5 +1,7 @@
 # Changelog
 
+## [0.6.2-beta.0](https://github.com/Seungwoo321/genai-pr/compare/v0.6.1...v0.6.2-beta.0) (2026-06-20)
+
 ## [0.6.1](https://github.com/Seungwoo321/genai-pr/compare/v0.6.1-beta.0...v0.6.1) (2026-06-18)
 
 ## [0.6.1-beta.0](https://github.com/Seungwoo321/genai-pr/compare/v0.6.0...v0.6.1-beta.0) (2026-06-18)
